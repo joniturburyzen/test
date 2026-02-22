@@ -49,3 +49,85 @@ clave
 </body>
 </html>
 ```
+
+### Paso 2: Ejecutar la Aplicación
+
+Abre el archivo `index.html` en tu navegador. Verás una interfaz simple que mostrará un mensaje indicando si los
+datos fueron enviados correctamente o no.
+
+### Explicación del Código
+
+1. **HTML**: La página simplemente muestra un título y un div para mostrar mensajes.
+2. **JavaScript**:
+   - Se importa la biblioteca cliente de Supabase.
+   - Se configura la URL y la clave de Supabase.
+   - Se crea un cliente de Supabase usando `Supabase.createClient`.
+   - Se define una función `sendData` que contiene los datos a enviar (nombre, latitud y longitud).
+   - Se verifica que los datos sean válidos.
+   - Se intenta insertar los datos en la tabla `trakin` de Supabase usando `supabase.from('trakin').insert`.
+   - Se manejan las respuestas del servidor para mostrar un mensaje indicando si el envío fue exitoso o no.
+   - La función `sendData` se ejecuta automáticamente cuando carga la página (`window.onload = sendData;`).
+
+Esta aplicación sencilla te permite probar la conexión con Supabase y verificar si los datos se envían
+correctamente de manera automática.
+
+>>> no me devuelve los datos al supabase
+Mis disculpas por cualquier confusión anterior. Vamos a crear una aplicación más simple en HTML y JavaScript que
+inserte automáticamente datos en Supabase, pero sin necesidad de un formulario.
+
+### Paso 1: Crear el Archivo HTML (index.html)
+
+Crea un archivo llamado `index.html` con el siguiente contenido:
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prueba Supabase</title>
+</head>
+<body>
+  <h1>Prueba Supabase</h1>
+
+  <div id="output"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const supabaseUrl = 'https://xbaxkflkvkotvqsqvqxz.supabase.co'; // Cambia por tu URL
+    const supabaseKey =
+'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiYXhrZmxrdmtvdHZxc3F2cXh6Iiwicm9sZSI6ImFub'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiYXhrZmxrdmtvdHZxcF2cXh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MTYxMDgsImV4cCI6MjA4NzE5MjEwOH0.6Cl4YgEeTmOSYtKgDoiiWTh_DyXWai8Hq4vSqI_D5GU'; // Cambia por tu
+clave
+    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+
+    async function sendData() {
+      try {
+        const name = 'Ejemplo'; // Nombre de ejemplo
+        const lat = 37.7749; // Latitud de ejemplo
+        const lon = -122.4194; // Longitud de ejemplo
+
+        if (!name || isNaN(lat) || isNaN(lon)) {
+          document.getElementById('output').textContent = 'Datos no válidos';
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('trakin')
+          .insert([{ name, lat, lon }]);
+
+        if (error) {
+          document.getElementById('output').textContent = `Error al enviar datos: ${error.message}`;
+        } else {
+          document.getElementById('output').textContent = `Datos enviados con éxito`;
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('output').textContent = 'Error al enviar datos';
+      }
+    }
+
+    window.onload = sendData;
+  </script>
+</body>
+</html>
+```
