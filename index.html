@@ -1,0 +1,51 @@
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prueba Supabase</title>
+</head>
+<body>
+  <h1>Prueba Supabase</h1>
+
+  <div id="output"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const supabaseUrl = 'https://xbaxkflkvkotvqsqvqxz.supabase.co'; // Cambia por tu URL
+    const supabaseKey =
+'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiYXhrZmxrdmtvdHZxc3F2cXh6Iiwicm9sZSI6ImFub'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiYXhrZmxrdmtvdHZxcF2cXh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MTYxMDgsImV4cCI6MjA4NzE5MjEwOH0.6Cl4YgEeTmOSYtKgDoiiWTh_DyXWai8Hq4vSqI_D5GU'; // Cambia por tu
+clave
+    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+
+    function sendData() {
+      const name = 'Ejemplo'; // Nombre de ejemplo
+      const lat = 37.7749; // Latitud de ejemplo
+      const lon = -122.4194; // Longitud de ejemplo
+
+      if (!name || isNaN(lat) || isNaN(lon)) {
+        document.getElementById('output').textContent = 'Datos no válidos';
+        return;
+      }
+
+      supabase
+        .from('trakin')
+        .insert([{ name, lat, lon }])
+        .then(response => {
+          if (response.error) {
+            document.getElementById('output').textContent = `Error al enviar datos: ${response.error.message}`;
+          } else {
+            document.getElementById('output').textContent = `Datos enviados con éxito`;
+          }
+        })
+        .catch(error => {
+          document.getElementById('output').textContent = `Error al enviar datos: ${error.message}`;
+        });
+    }
+
+    window.onload = sendData;
+  </script>
+</body>
+</html>
+```
