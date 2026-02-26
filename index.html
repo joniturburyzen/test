@@ -1,254 +1,878 @@
----
-name: 3d-web-experience
-description: "Expert in building 3D experiences for the web - Three.js, React Three Fiber, Spline, WebGL, and interactive 3D scenes. Covers product configurators, 3D portfolios, immersive websites, and bringing depth to web experiences. Use when: 3D website, three.js, WebGL, react three fiber, 3D experience."
-source: vibeship-spawner-skills (Apache 2.0)
----
+<!DOCTYPE html>
+<html lang="es">
 
-# 3D Web Experience
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EL SEGARRO 3D - MASTER EDITION</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
 
-**Role**: 3D Web Experience Architect
+        body {
+            background: #0a0a14;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            color: white;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+        }
 
-You bring the third dimension to the web. You know when 3D enhances
-and when it's just showing off. You balance visual impact with
-performance. You make 3D accessible to users who've never touched
-a 3D app. You create moments of wonder without sacrificing usability.
+        #gc {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-## Capabilities
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
 
-- Three.js implementation
-- React Three Fiber
-- WebGL optimization
-- 3D model integration
-- Spline workflows
-- 3D product configurators
-- Interactive 3D scenes
-- 3D performance optimization
+        #hud {
+            position: absolute;
+            top: 2%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4vw;
+            background: rgba(0, 0, 0, .85);
+            padding: 1.8vh 3.5vw;
+            border-radius: 3vh;
+            border: 2px solid #ffd166;
+            box-shadow: 0 0 15px rgba(255, 209, 102, .7);
+            font-size: 2.8vh;
+            font-weight: bold;
+            z-index: 100;
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
+            pointer-events: none;
+        }
 
-## Patterns
+        #score-d,
+        #rec-d {
+            position: absolute;
+            top: 2%;
+            font-size: 3.2vh;
+            font-weight: bold;
+            color: #ffd166;
+            text-shadow: 0 0 8px rgba(255, 209, 102, .9);
+            z-index: 100;
+            text-align: center;
+            width: 30%;
+            pointer-events: none;
+        }
 
-### 3D Stack Selection
+        #score-d {
+            right: 3%;
+        }
 
-Choosing the right 3D approach
+        #rec-d {
+            left: 3%;
+        }
 
-**When to use**: When starting a 3D web project
+        #combo-d {
+            position: absolute;
+            top: 15%;
+            right: 5%;
+            font-size: 4vh;
+            font-weight: bold;
+            color: #ff4d4d;
+            opacity: 0;
+            transform: scale(0);
+            transition: all .3s cubic-bezier(.175, .885, .32, 1.275);
+            z-index: 100;
+        }
 
-```python
-## 3D Stack Selection
+        #combo-d.show {
+            opacity: 1;
+            transform: scale(1);
+        }
 
-### Options Comparison
-| Tool | Best For | Learning Curve | Control |
-|------|----------|----------------|---------|
-| Spline | Quick prototypes, designers | Low | Medium |
-| React Three Fiber | React apps, complex scenes | Medium | High |
-| Three.js vanilla | Max control, non-React | High | Maximum |
-| Babylon.js | Games, heavy 3D | High | Maximum |
+        #spd-ind {
+            position: absolute;
+            bottom: 5%;
+            left: 3%;
+            width: 25vw;
+            height: 1.5vh;
+            background: rgba(0, 0, 0, .5);
+            border: 1px solid rgba(255, 255, 255, .3);
+            border-radius: 1vh;
+            z-index: 100;
+        }
 
-### Decision Tree
-```
-Need quick 3D element?
-└── Yes → Spline
-└── No → Continue
+        #spd-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #06d6a0, #ffd166, #ff4d4d);
+            width: 20%;
+            border-radius: 1vh;
+            transition: width .3s;
+        }
 
-Using React?
-└── Yes → React Three Fiber
-└── No → Continue
+        #go,
+        #ts {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            background: rgba(10, 10, 20, .92);
+        }
 
-Need max performance/control?
-└── Yes → Three.js vanilla
-└── No → Spline or R3F
-```
+        #go {
+            display: none;
+        }
 
-### Spline (Fastest Start)
-```jsx
-import Spline from '@splinetool/react-spline';
+        #go.show {
+            display: flex;
+        }
 
-export default function Scene() {
-  return (
-    <Spline scene="https://prod.spline.design/xxx/scene.splinecode" />
-  );
-}
-```
+        h1 {
+            font-size: 8vh;
+            color: #ffd166;
+            text-shadow: 0 0 20px #ff4d4d;
+            margin-bottom: 5vh;
+            text-align: center;
+        }
 
-### React Three Fiber
-```jsx
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, useGLTF } from '@react-three/drei';
+        button {
+            background: linear-gradient(45deg, #ff4d4d, #ffd166);
+            color: white;
+            border: none;
+            padding: 3vh 10vw;
+            font-size: 4vh;
+            border-radius: 2vh;
+            cursor: pointer;
+            font-family: 'Courier New';
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(255, 77, 77, .5);
+            margin-top: 2vh;
+        }
 
-function Model() {
-  const { scene } = useGLTF('/model.glb');
-  return <primitive object={scene} />;
-}
+        #paki-ind {
+            position: absolute;
+            top: 12%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.5vh;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 12px #ffd700;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity .5s;
+            pointer-events: none;
+        }
 
-export default function Scene() {
-  return (
-    <Canvas>
-      <ambientLight />
-      <Model />
-      <OrbitControls />
-    </Canvas>
-  );
-}
-```
-```
+        #paki-ind.show {
+            opacity: 1;
+        }
 
-### 3D Model Pipeline
+        #am {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            background: #ffd166;
+            color: #000;
+            padding: 2vh 5vw;
+            border-radius: 3vh;
+            font-weight: bold;
+            transition: .3s cubic-bezier(.175, .885, .32, 1.275);
+            z-index: 300;
+        }
 
-Getting models web-ready
+        #am.show {
+            transform: translateX(-50%) scale(1);
+        }
 
-**When to use**: When preparing 3D assets
+        #hint {
+            position: absolute;
+            bottom: 10%;
+            right: 3%;
+            font-size: 1.4vh;
+            color: rgba(255, 255, 255, .35);
+            z-index: 100;
+            text-align: right;
+            pointer-events: none;
+            line-height: 1.8;
+        }
 
-```python
-## 3D Model Pipeline
+        #popup {
+            position: absolute;
+            top: 38%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 7vh;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 25px #ffd700, 0 0 50px #ff4400;
+            z-index: 250;
+            pointer-events: none;
+            transition: all .35s cubic-bezier(.175, .885, .32, 1.275);
+            letter-spacing: 3px;
+        }
 
-### Format Selection
-| Format | Use Case | Size |
-|--------|----------|------|
-| GLB/GLTF | Standard web 3D | Smallest |
-| FBX | From 3D software | Large |
-| OBJ | Simple meshes | Medium |
-| USDZ | Apple AR | Medium |
+        #popup.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
 
-### Optimization Pipeline
-```
-1. Model in Blender/etc
-2. Reduce poly count (< 100K for web)
-3. Bake textures (combine materials)
-4. Export as GLB
-5. Compress with gltf-transform
-6. Test file size (< 5MB ideal)
-```
+        @keyframes fu {
+            0% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0)
+            }
 
-### GLTF Compression
-```bash
-# Install gltf-transform
-npm install -g @gltf-transform/cli
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-70px)
+            }
+        }
 
-# Compress model
-gltf-transform optimize input.glb output.glb \
-  --compress draco \
-  --texture-compress webp
-```
+        /* === LOADING SCREEN (skill: No Loading State anti-pattern) === */
+        #loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a14;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 400;
+            transition: opacity 0.6s ease;
+        }
 
-### Loading in R3F
-```jsx
-import { useGLTF, useProgress, Html } from '@react-three/drei';
-import { Suspense } from 'react';
+        #loading.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
 
-function Loader() {
-  const { progress } = useProgress();
-  return <Html center>{progress.toFixed(0)}%</Html>;
-}
+        #load-title {
+            font-size: 6vh;
+            font-weight: bold;
+            color: #ffd166;
+            text-shadow: 0 0 20px #ff4d4d, 0 0 40px #ffd166;
+            margin-bottom: 4vh;
+            letter-spacing: 3px;
+            animation: ldPulse 1.5s ease-in-out infinite;
+        }
 
-export default function Scene() {
-  return (
-    <Canvas>
-      <Suspense fallback={<Loader />}>
-        <Model />
-      </Suspense>
-    </Canvas>
-  );
-}
-```
-```
+        @keyframes ldPulse {
 
-### Scroll-Driven 3D
+            0%,
+            100% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
 
-3D that responds to scroll
+            50% {
+                opacity: 1;
+                transform: scale(1.04);
+            }
+        }
 
-**When to use**: When integrating 3D with scroll
+        #load-bar-wrap {
+            width: 50vw;
+            max-width: 320px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 2vh;
+        }
 
-```python
-## Scroll-Driven 3D
+        #load-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #06d6a0, #ffd166, #ff4d4d);
+            border-radius: 6px;
+            transition: width 0.4s ease;
+            box-shadow: 0 0 8px #ffd166;
+        }
 
-### R3F + Scroll Controls
-```jsx
-import { ScrollControls, useScroll } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
+        #load-txt {
+            font-size: 1.8vh;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
 
-function RotatingModel() {
-  const scroll = useScroll();
-  const ref = useRef();
+<body>
+    <div id="gc">
+        <div id="hud">
+            <div>❤️ <span id="vidas">1</span></div>
+            <div>🚬 <span id="cigs">0</span>/5</div>
+        </div>
+        <div id="score-d">SCORE: 0</div>
+        <div id="rec-d">RÉCORD: 0</div>
+        <div id="combo-d">x0</div>
+        <div id="spd-ind">
+            <div id="spd-bar"></div>
+        </div>
+        <div id="paki-ind">🌟 PAKI RICOH 🌟</div>
+        <div id="hint">← → mover · ↑ saltar · ↓ agachar<br>3×↓ rápido = €URO</div>
+        <div id="popup"></div>
 
-  useFrame(() => {
-    // Rotate based on scroll position
-    ref.current.rotation.y = scroll.offset * Math.PI * 2;
-  });
+        <!-- Loading screen (skill: No Loading State fix) -->
+        <div id="loading">
+            <div id="load-title">EL SEGARRO 3D</div>
+            <div id="load-bar-wrap">
+                <div id="load-bar"></div>
+            </div>
+            <div id="load-txt">CARGANDO PERSONAJES... 0/3</div>
+        </div>
 
-  return <mesh ref={ref}>...</mesh>;
-}
+        <div id="ts" style="display:none">
+            <h1>EL SEGARRO 3D</h1><button id="start-btn">EMPEZAR A FUMAR</button>
+        </div>
+        <div id="go">
+            <h2 style="font-size:6vh;color:#ff4d4d">¡RECISTA!</h2>
+            <p id="final-s" style="font-size:4vh;margin:3vh 0">SCORE: 0</p>
+            <p id="best-r" style="font-size:3vh;color:#ffd166">RÉCORD: 0</p>
+            <button id="restart-btn">OTRA VEZ, AMIGOO</button>
+        </div>
+        <div id="am">🔊 ¡MUSIQUILLA ÁRABE ACTIVADA!</div>
+    </div>
 
-export default function Scene() {
-  return (
-    <Canvas>
-      <ScrollControls pages={3}>
-        <RotatingModel />
-      </ScrollControls>
-    </Canvas>
-  );
-}
-```
+    <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
+    <script type="module">
+        import * as THREE from 'three';
 
-### GSAP + Three.js
-```javascript
-import gsap from 'gsap';
-import ScrollTrigger from 'gsap/ScrollTrigger';
+        // =========================================================
+        // ARTICULATED CHARACTER — 3D split: upper body + L/R legs
+        // Each part is a PlaneGeometry with UV crop from the PNG
+        // Legs hang from a pivot group that rotates around X axis
+        // =========================================================
+        class Char3D {
+            constructor(url, h3d, legSplit) {
+                // legSplit: fraction from TOP where legs begin (e.g. 0.65)
+                this.group = new THREE.Group();
+                this.ready = false;
+                this.h3d = h3d;
+                this.legSplit = legSplit;
+                this._shadow();
+                this._load(url, h3d, legSplit);
+            }
 
-gsap.to(camera.position, {
-  scrollTrigger: {
-    trigger: '.section',
-    scrub: true,
-  },
-  z: 5,
-  y: 2,
-});
-```
+            static _cleanTex(url, cb) {
+                const img = new Image();
+                img.onload = () => {
+                    const c = document.createElement('canvas');
+                    c.width = img.width; c.height = img.height;
+                    const x = c.getContext('2d');
+                    x.drawImage(img, 0, 0);
+                    const d = x.getImageData(0, 0, c.width, c.height), px = d.data;
+                    for (let i = 0; i < px.length; i += 4) {
+                        if (px[i] > 225 && px[i + 1] > 225 && px[i + 2] > 225) px[i + 3] = 0;
+                        else if (px[i] > 200 && px[i + 1] > 200 && px[i + 2] > 200)
+                            px[i + 3] = Math.round(255 - (px[i] - 200) / 55 * 255);
+                    }
+                    x.putImageData(d, 0, 0);
+                    const t = new THREE.CanvasTexture(c);
+                    t.userData.aspect = img.width / img.height;
+                    cb(t);
+                    // Track loading progress (skill: No Loading State fix)
+                    window._loaded = (window._loaded || 0) + 1;
+                    const pct = Math.round((window._loaded / 3) * 100);
+                    const bar = document.getElementById('load-bar');
+                    const txt = document.getElementById('load-txt');
+                    if (bar) bar.style.width = pct + '%';
+                    if (txt) txt.textContent = `CARGANDO PERSONAJES... ${window._loaded}/3`;
+                    if (window._loaded >= 3) {
+                        setTimeout(() => {
+                            const ld = document.getElementById('loading');
+                            const ts = document.getElementById('ts');
+                            if (ld) { ld.classList.add('hide'); setTimeout(() => ld.remove(), 700); }
+                            if (ts) ts.style.display = 'flex';
+                        }, 400);
+                    }
+                };
+                img.onerror = () => {
+                    // Fallback if PNG not found via file://
+                    window._loaded = (window._loaded || 0) + 1;
+                    if (window._loaded >= 3) {
+                        const ld = document.getElementById('loading');
+                        const ts = document.getElementById('ts');
+                        if (ld) { ld.classList.add('hide'); setTimeout(() => ld.remove(), 700); }
+                        if (ts) ts.style.display = 'flex';
+                    }
+                    cb(null);
+                };
+                img.src = url;
+            }
 
-### Common Scroll Effects
-- Camera movement through scene
-- Model rotation on scroll
-- Reveal/hide elements
-- Color/material changes
-- Exploded view animations
-```
+            _mkMat(tex) {
+                return new THREE.MeshBasicMaterial({
+                    map: tex, transparent: true, alphaTest: 0.04,
+                    side: THREE.DoubleSide, depthWrite: false
+                });
+            }
 
-## Anti-Patterns
+            _load(url, h3d, ls) {
+                Char3D._cleanTex(url, (base) => {
+                    const asp = base.userData.aspect;
+                    const w3d = h3d * asp;
 
-### ❌ 3D For 3D's Sake
+                    const uH = h3d * ls;          // upper body height (head+torso)
+                    const lH = h3d * (1 - ls);    // leg section height
+                    const hipY = lH;                // world Y of hip pivot
 
-**Why bad**: Slows down the site.
-Confuses users.
-Battery drain on mobile.
-Doesn't help conversion.
+                    // -- UPPER BODY (top ls fraction of image) --
+                    // THREE UV: y=0 is bottom of image quad, y=1 is top
+                    // Top ls of image → UVy from (1-ls) to 1 → offset.y=(1-ls), repeat.y=ls
+                    const uTex = base.clone(); uTex.repeat.set(1, ls); uTex.offset.set(0, 1 - ls); uTex.needsUpdate = true;
+                    this.upper = new THREE.Mesh(new THREE.PlaneGeometry(w3d, uH), this._mkMat(uTex));
+                    this.upper.position.set(0, hipY + uH * 0.5, 0);
+                    this.upper.renderOrder = 2;
+                    this.group.add(this.upper);
 
-**Instead**: 3D should serve a purpose.
-Product visualization = good.
-Random floating shapes = probably not.
-Ask: would an image work?
+                    // -- BACK LEG (right half of image bottom ls, stays behind) --
+                    const bTex = base.clone(); bTex.repeat.set(0.5, 1 - ls); bTex.offset.set(0.5, 0); bTex.needsUpdate = true;
+                    const bMesh = new THREE.Mesh(new THREE.PlaneGeometry(w3d * 0.5, lH), this._mkMat(bTex));
+                    bMesh.position.set(w3d * 0.25, -lH * 0.5, 0);
+                    bMesh.renderOrder = 1;
+                    this.backPivot = new THREE.Group();
+                    this.backPivot.position.set(0, hipY, -0.04);
+                    this.backPivot.add(bMesh);
+                    this.group.add(this.backPivot);
 
-### ❌ Desktop-Only 3D
+                    // -- FRONT LEG (left half of image bottom ls, in front) --
+                    const fTex = base.clone(); fTex.repeat.set(0.5, 1 - ls); fTex.offset.set(0, 0); fTex.needsUpdate = true;
+                    const fMesh = new THREE.Mesh(new THREE.PlaneGeometry(w3d * 0.5, lH), this._mkMat(fTex));
+                    fMesh.position.set(-w3d * 0.25, -lH * 0.5, 0);
+                    fMesh.renderOrder = 3;
+                    this.frontPivot = new THREE.Group();
+                    this.frontPivot.position.set(0, hipY, 0.04);
+                    this.frontPivot.add(fMesh);
+                    this.group.add(this.frontPivot);
 
-**Why bad**: Most traffic is mobile.
-Kills battery.
-Crashes on low-end devices.
-Frustrated users.
+                    this._hipY = hipY; this._uH = uH; this._lH = lH; this._w3d = w3d;
+                    this.ready = true;
+                });
+            }
 
-**Instead**: Test on real mobile devices.
-Reduce quality on mobile.
-Provide static fallback.
-Consider disabling 3D on low-end.
+            _shadow() {
+                const m = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.5, 16),
+                    new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .28, depthWrite: false })
+                );
+                m.rotation.x = -Math.PI / 2; m.position.y = 0.02;
+                this.shadowM = m; this.group.add(m);
+            }
 
-### ❌ No Loading State
+            animate(t, moving, crouch, jump, gY = 0, invFlash = false) {
+                if (!this.ready) return;
 
-**Why bad**: Users think it's broken.
-High bounce rate.
-3D takes time to load.
-Bad first impression.
+                const speed = moving ? 11 : 2;
+                const amp = crouch ? 0.1 : jump ? 0.48 : moving ? 0.32 : 0.03;
+                const s = Math.sin(t * speed);
 
-**Instead**: Loading progress indicator.
-Skeleton/placeholder.
-Load 3D after page is interactive.
-Optimize model size.
+                // Leg swing around X (forward/backward in world)
+                this.backPivot.rotation.x = -s * amp;
+                this.frontPivot.rotation.x = s * amp;
 
-## Related Skills
+                // Keep pivot Y locked to ground+hip
+                this.backPivot.position.y = gY + this._hipY;
+                this.frontPivot.position.y = gY + this._hipY;
 
-Works well with: `scroll-experience`, `interactive-portfolio`, `frontend`, `landing-page-design`
+                // Upper body: tiny vertical bob only
+                const bob = moving && !crouch ? Math.abs(Math.sin(t * speed)) * 0.025 : 0;
+                this.upper.position.y = gY + this._hipY + this._uH * 0.5 + bob;
+
+                // Crouch squash
+                this.group.scale.y = crouch ? 0.6 : 1;
+                this.group.scale.x = crouch ? 1.1 : 1;
+
+                // Invulnerability flicker
+                const vis = !invFlash || Math.floor(t * 14) % 2 === 0;
+                const setOp = (m) => { if (m?.material) m.material.opacity = vis ? 1 : 0.12; };
+                setOp(this.upper);
+                this.backPivot.children.forEach(setOp);
+                this.frontPivot.children.forEach(setOp);
+
+                // Shadow
+                const ss = Math.max(0.35, 1 - Math.abs(gY) * 0.07);
+                this.shadowM.scale.set(ss, ss, 1);
+            }
+        }
+
+        // =========================================================
+        // AUDIO
+        // =========================================================
+        class Snd {
+            constructor() { this.ctx = null; this.on = false; }
+            init() {
+                if (this.ctx) return;
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.on = true; this._loop();
+            }
+            play(f, type = 'sine', dur = .2, vol = .12) {
+                if (!this.on || !this.ctx) return;
+                try {
+                    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+                    o.type = type; o.frequency.value = f;
+                    g.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(.01, this.ctx.currentTime + dur);
+                    o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime + dur);
+                } catch (e) { }
+            }
+            _loop() {
+                const n = [110, 130.81, 146.83, 164.81, 196]; let i = 0;
+                const nx = () => { if (!this.on) return; this.play(n[i], 'sine', 2, .04); i = (i + 1) % n.length; setTimeout(nx, 2400); };
+                nx();
+            }
+        }
+
+        // =========================================================
+        // GAME
+        // =========================================================
+        class Game {
+            constructor() {
+                this.snd = new Snd();
+                this._scene(); this._logic(); this._events(); this._run();
+            }
+
+            _scene() {
+                this.sc = new THREE.Scene();
+                this.sc.background = new THREE.Color(0x0a0a14);
+                this.sc.fog = new THREE.FogExp2(0x0a0a14, 0.015);
+
+                this.cam = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, .1, 700);
+                this.cam.position.set(0, 6, 12); this.cam.lookAt(0, 2, 0);
+
+                this.ren = new THREE.WebGLRenderer({ antialias: true });
+                this.ren.setSize(innerWidth, innerHeight);
+                // Skill: Desktop-Only 3D fix — cap DPR on mobile to preserve battery/perf
+                const isMob = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                this.ren.setPixelRatio(Math.min(devicePixelRatio, isMob ? 1.5 : 2));
+                this.ren.shadowMap.enabled = !isMob; // shadows off on mobile
+                document.getElementById('gc').appendChild(this.ren.domElement);
+
+                this.sc.add(new THREE.AmbientLight(0xffffff, .7));
+                const sun = new THREE.DirectionalLight(0xffd166, 1.5);
+                sun.position.set(8, 20, 8); sun.castShadow = true; this.sc.add(sun);
+                this.sc.add(new THREE.HemisphereLight(0x1a1a3a, 0x001122, .4));
+                this.neon = new THREE.PointLight(0xff3333, .8, 32);
+                this.neon.position.set(0, -1, 6); this.sc.add(this.neon);
+
+                // Road
+                const road = new THREE.Mesh(new THREE.PlaneGeometry(16, 700), new THREE.MeshPhongMaterial({ color: 0x111833 }));
+                road.rotation.x = -Math.PI / 2; road.receiveShadow = true; this.sc.add(road);
+
+                // Grid
+                this.grid = new THREE.GridHelper(200, 40, 0xffd166, 0x223366);
+                this.grid.position.y = 0.05; this.sc.add(this.grid);
+
+                // Lane lines
+                const lm = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: .3 });
+                [-2.25, 2.25].forEach(x => {
+                    const l = new THREE.Mesh(new THREE.PlaneGeometry(.1, 700), lm.clone());
+                    l.rotation.x = -Math.PI / 2; l.position.set(x, .07, -150); this.sc.add(l);
+                });
+
+                this._city(); this._ptcl();
+
+                // Player character
+                this.player = new Char3D('protagonista.png', 4.0, 0.65);
+                this.sc.add(this.player.group);
+
+                window.addEventListener('resize', () => {
+                    this.cam.aspect = innerWidth / innerHeight;
+                    this.cam.updateProjectionMatrix();
+                    this.ren.setSize(innerWidth, innerHeight);
+                });
+            }
+
+            _city() {
+                const cols = [0x0d1b2a, 0x16213e, 0x1a1a3a, 0x0f3460];
+                const wm = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: .55 });
+                const isMob = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                const step = isMob ? 30 : 20; // fewer buildings on mobile
+                const winDensity = isMob ? 0.7 : 0.45; // fewer windows on mobile
+                for (const side of [-1, 1]) {
+                    for (let z = -240; z < 30; z += step) {
+                        const h = 8 + Math.random() * 14, w = 3 + Math.random() * 3;
+                        const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 5),
+                            new THREE.MeshPhongMaterial({ color: cols[Math.floor(Math.random() * cols.length)] }));
+                        b.position.set(side * (9.5 + w * .5), h * .5, z); this.sc.add(b);
+                        if (!isMob) for (let wy = 1; wy < h - 1; wy += 2) for (let wx = -w * .5 + .6; wx < w * .5; wx += 1.3) {
+                            if (Math.random() > winDensity) {
+                                const ww = new THREE.Mesh(new THREE.PlaneGeometry(.55, .7), wm.clone());
+                                ww.position.set(b.position.x + wx, wy, z - 2.51 * side);
+                                ww.rotation.y = side === 1 ? Math.PI : 0; this.sc.add(ww);
+                            }
+                        }
+                    }
+                }
+            }
+            _ptcl() {
+                const g = new THREE.BufferGeometry(), p = new Float32Array(90 * 3);
+                for (let i = 0; i < 90; i++) { p[i * 3] = (Math.random() - .5) * 14; p[i * 3 + 1] = Math.random() * 7; p[i * 3 + 2] = (Math.random() - .5) * 80; }
+                g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+                this.ptcl = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffd166, size: .07, transparent: true, opacity: .4 }));
+                this.sc.add(this.ptcl);
+            }
+
+            _cigMesh() {
+                const g = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, 1.1), new THREE.MeshPhongMaterial({ color: 0xf5f5dc }));
+                body.rotation.z = Math.PI / 2;
+                const tip = new THREE.Mesh(new THREE.SphereGeometry(.16), new THREE.MeshBasicMaterial({ color: 0xff5500 }));
+                tip.position.x = 0.62;
+                const gl = new THREE.PointLight(0xff6600, 2.5, 2.5); gl.position.x = 0.62;
+                g.add(body, tip, gl); return g;
+            }
+
+            _entChar(type) {
+                let url, h, ls;
+                if (type === 'cerdo') { url = 'cerdo.png'; h = 1.95; ls = 0.76; }
+                else { url = 'policia.png'; h = 4.0; ls = 0.63; }
+                const c = new Char3D(url, h, ls);
+                c.group.userData.char = c;
+                return c.group;
+            }
+
+            _logic() {
+                this.S = {
+                    on: false, t: 0, score: 0, speed: 4.8, combo: 0,
+                    lane: 1, y: 0, vy: 0, jumping: false, crouch: false,
+                    vidas: 1, cigs: 0, totalCigs: 0, inv: 0,
+                    choques: 0, paki: false, pakiT: 0,
+                    euro: false, swDown: 0, swDownT: 0,
+                    lanesX: [-4.5, 0, 4.5],
+                    record: parseInt(localStorage.getItem('segarroRecord')) || 0,
+                    freq: 90, spawnC: 0, shake: 0
+                };
+                this.ents = [];
+                document.getElementById('rec-d').textContent = `RÉCORD: ${this.S.record}`;
+            }
+
+            _events() {
+                document.getElementById('start-btn').onclick = () => {
+                    document.getElementById('ts').style.display = 'none';
+                    this.S.on = true; this.snd.init();
+                    const am = document.getElementById('am');
+                    am.classList.add('show'); setTimeout(() => am.classList.remove('show'), 3000);
+                };
+                document.getElementById('restart-btn').onclick = () => location.reload();
+
+                window.addEventListener('keydown', e => {
+                    if (!this.S.on) return;
+                    const S = this.S;
+                    if (e.code === 'ArrowLeft' || e.code === 'KeyA') { if (S.lane > 0) S.lane--; }
+                    else if (e.code === 'ArrowRight' || e.code === 'KeyD') { if (S.lane < 2) S.lane++; }
+                    else if ((e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') && !S.jumping) {
+                        e.preventDefault(); S.vy = 0.44; S.jumping = true; this.snd.play(400);
+                    } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+                        if (!S.crouch && !S.jumping) this._crouch();
+                        this._euro();
+                    }
+                });
+
+                let sx, sy, st;
+                window.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); });
+                window.addEventListener('touchend', e => {
+                    if (!this.S.on) return;
+                    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+                    if (Date.now() - st > 400) return;
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        if (dx > 30 && this.S.lane < 2) this.S.lane++;
+                        if (dx < -30 && this.S.lane > 0) this.S.lane--;
+                    } else {
+                        if (dy < -30 && !this.S.jumping) { this.S.vy = 0.44; this.S.jumping = true; this.snd.play(400); }
+                        if (dy > 30) { this._crouch(); this._euro(); }
+                    }
+                });
+            }
+
+            _crouch() { if (this.S.crouch) return; this.S.crouch = true; setTimeout(() => this.S.crouch = false, 600); }
+
+            _euro() {
+                const n = Date.now(), S = this.S;
+                if (S.swDown === 0 || n - S.swDownT > 1000) { S.swDown = 1; S.swDownT = n; }
+                else { S.swDown++; if (S.swDown >= 3 && !S.euro) { this._activateEuro(); S.swDown = 0; } }
+            }
+            _activateEuro() {
+                this.S.euro = true; this.S.vidas++;
+                document.getElementById('vidas').textContent = this.S.vidas;
+                this.snd.play(800, 'square', .4, .3); this._popup('€URO');
+            }
+            _activatePaki() {
+                this.S.paki = true; this.S.pakiT = 0;
+                document.getElementById('paki-ind').classList.add('show');
+                this._popup('¡PAKI RICOH!'); this.snd.play(600, 'sine', .4, .35); this.S.shake = 14;
+            }
+            _popup(txt) {
+                const el = document.getElementById('popup');
+                el.textContent = txt; el.classList.add('show');
+                clearTimeout(this._pt); this._pt = setTimeout(() => el.classList.remove('show'), 2200);
+            }
+            _float(txt, col = '#ffd166') {
+                const d = document.createElement('div');
+                d.textContent = txt;
+                d.style.cssText = `position:absolute;top:35%;left:50%;transform:translateX(-50%);font-size:4vh;font-weight:bold;color:${col};text-shadow:0 0 12px ${col};z-index:150;pointer-events:none;animation:fu 1.2s ease-out forwards;font-family:'Courier New',monospace;`;
+                document.getElementById('gc').appendChild(d);
+                d.addEventListener('animationend', () => d.remove());
+            }
+            _spawn() {
+                const lane = Math.floor(Math.random() * 3), r = Math.random();
+                let type, mesh;
+                if (r < .45) { type = 'poli'; mesh = this._entChar('policia'); }
+                else if (r < .67) { type = 'polif'; mesh = this._entChar('policia'); mesh.userData.fast = true; }
+                else if (r < .75) { type = 'cerdo'; mesh = this._entChar('cerdo'); }
+                else { type = 'cig'; mesh = this._cigMesh(); }
+                mesh.position.set(this.S.lanesX[lane], 0, -95);
+                this.sc.add(mesh); this.ents.push({ mesh, type, lane });
+            }
+
+            update() {
+                if (!this.S.on) return;
+                const S = this.S; S.t++; const t = S.t * .016;
+
+                // Score + difficulty (original breakpoints)
+                S.score++;
+                let spd = 4.8;
+                if (S.score >= 1000) spd += .6; if (S.score >= 2000) spd += .6;
+                if (S.score >= 3500) spd += .6; if (S.score >= 5500) spd += .6;
+                if (S.score >= 8000) spd += .6; if (S.score >= 11000) spd += .6;
+                if (S.score >= 15000) spd += .6;
+                S.speed = spd;
+                if (S.inv > 0) S.inv--;
+
+                // PAKI RICOH
+                if (S.paki) { S.pakiT++; if (S.pakiT >= 420) { S.paki = false; document.getElementById('paki-ind').classList.remove('show'); this._float('..', '#fff'); this.snd.play(200, 'square', .3, .3); } }
+
+                // Escena final
+                if (S.score >= 30000 && !S._final) { S._final = true; this._popup('¡AMIGOO! 🎉'); this.snd.play(800, 'sine', .8, .3); }
+
+                // Player X
+                const tx = S.lanesX[S.lane];
+                this.player.group.position.x += (tx - this.player.group.position.x) * .16;
+
+                // Jump
+                if (S.jumping) { S.y += S.vy; S.vy -= .022; if (S.y <= 0) { S.y = 0; S.jumping = false; S.vy = 0; } }
+                this.player.group.position.y = S.y;
+                this.player.animate(t, true, S.crouch, S.jumping, S.y, S.inv > 0);
+
+                // Grid scroll
+                this.grid.position.z = (S.t * S.speed * .1) % 5;
+                if (this.ptcl) this.ptcl.position.z = (S.t * .06) % 80 - 40;
+
+                // Camera shake
+                if (S.shake > 0) {
+                    this.cam.position.x = (Math.random() - .5) * S.shake * .04;
+                    this.cam.position.y = 6 + (Math.random() - .5) * S.shake * .03;
+                    S.shake--;
+                    if (S.shake <= 0) this.cam.position.set(0, 6, 12);
+                }
+
+                // Neon color
+                this.neon.color.setHex(S.paki ? 0xffd700 : 0xff3333);
+
+                // Spawn
+                S.spawnC++; if (S.spawnC >= S.freq) { this._spawn(); S.spawnC = 0; S.freq = Math.max(40, 90 - Math.floor(S.score / 1200) * 6); }
+
+                // Player AABB
+                const pH = S.crouch ? 1.2 : 2.8, pW = 0.9;
+                const pBox = new THREE.Box3().setFromCenterAndSize(
+                    new THREE.Vector3(this.player.group.position.x, S.y + (S.crouch ? .6 : 1.4), 0),
+                    new THREE.Vector3(pW, pH, .9)
+                );
+
+                // Entities
+                for (let i = this.ents.length - 1; i >= 0; i--) {
+                    const e = this.ents[i];
+                    const vExtra = e.type === 'polif' ? 1.2 : e.type === 'cerdo' ? -1.5 : 0;
+                    e.mesh.position.z += (S.speed + vExtra) * .12;
+
+                    // Animate entity chars
+                    const ec = e.mesh.userData.char;
+                    if (ec) ec.animate(t + i * .6, true, false, false, 0);
+
+                    // Cigarro float + spin
+                    if (e.type === 'cig') { e.mesh.position.y = .8 + Math.sin(t * 2.5 + i) * .18; e.mesh.rotation.y += .03; }
+
+                    // Collision box
+                    const eH = e.type === 'cerdo' ? 1.4 : e.type === 'cig' ? .5 : 2.7, eW = e.type === 'cig' ? .55 : .85;
+                    const eBox = new THREE.Box3().setFromCenterAndSize(
+                        new THREE.Vector3(e.mesh.position.x, e.mesh.position.y + eH * .5, e.mesh.position.z),
+                        new THREE.Vector3(eW, eH, .9)
+                    );
+                    if (pBox.intersectsBox(eBox)) { this._hit(e, i); continue; }
+                    if (e.mesh.position.z > 16) { this.sc.remove(e.mesh); this.ents.splice(i, 1); }
+                }
+
+                this._ui();
+            }
+
+            _hit(e, i) {
+                const S = this.S;
+                if (e.type === 'cig') {
+                    S.cigs++; S.totalCigs++; S.combo++;
+                    this.snd.play(600, 'sine', .15);
+                    document.getElementById('cigs').textContent = S.cigs;
+                    this._float(S.combo > 1 ? `SEGARRO x${S.combo}` : 'SEGARRO', '#ffd166');
+                    if (S.cigs >= 5) { S.vidas++; S.cigs = 0; document.getElementById('vidas').textContent = S.vidas; document.getElementById('cigs').textContent = 0; this._float('AMIGOO', '#ffd700'); this.snd.play(800, 'square', .3, .35); }
+                    if (S.totalCigs > 0 && S.totalCigs % 10 === 0) this._activatePaki();
+                } else {
+                    if (S.paki) { if (Math.random() < .3) this._float('RECISTA', '#ff4d4d'); }
+                    else if (S.inv === 0) {
+                        S.choques++; S.combo = 0;
+                        this.snd.play(120, 'sawtooth', .4, .4); S.shake = 16;
+                        this._float(e.type === 'cerdo' ? 'YALLAH' : 'RECISTA', e.type === 'cerdo' ? '#ff80ab' : '#ff4d4d');
+                        if (S.choques >= 3) { this._float('MI CARTERA!', '#ffd166'); S.choques = 0; }
+                        if (S.vidas > 1) { S.vidas--; document.getElementById('vidas').textContent = S.vidas; S.inv = 90; }
+                        else { this._over(); return; }
+                    }
+                }
+                this.sc.remove(e.mesh); this.ents.splice(i, 1);
+            }
+
+            _ui() {
+                const S = this.S;
+                document.getElementById('score-d').textContent = `SCORE: ${S.score}`;
+                document.getElementById('spd-bar').style.width = `${Math.min(100, 20 + ((S.speed - 4.8) / 4.2) * 80)}%`;
+                const cd = document.getElementById('combo-d');
+                if (S.combo > 1) { cd.textContent = `x${S.combo}`; cd.classList.add('show'); } else cd.classList.remove('show');
+            }
+
+            _over() {
+                this.S.on = false;
+                document.getElementById('go').classList.add('show');
+                document.getElementById('final-s').textContent = `SCORE: ${this.S.score}`;
+                const best = Math.max(this.S.score, this.S.record);
+                document.getElementById('best-r').textContent = `RÉCORD: ${best}`;
+                if (this.S.score > this.S.record) localStorage.setItem('segarroRecord', this.S.score);
+            }
+
+            _run() {
+                this.update();
+                this.ren.render(this.sc, this.cam);
+                requestAnimationFrame(() => this._run());
+            }
+        }
+
+        new Game();
+    </script>
+</body>
+
+</html>
