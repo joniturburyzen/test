@@ -353,9 +353,10 @@
         <div id="am">🔊 ¡MUSIQUILLA ÁRABE ACTIVADA!</div>
     </div>
 
-    <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
-    <script type="module">
-        import * as THREE from 'three';
+    <!-- THREE.js desde CDN global — funciona sin servidor desde file:// -->
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script>
+        // THREE ya disponible como variable global
 
         // =========================================================
         // ARTICULATED CHARACTER — 3D split: upper body + L/R legs
@@ -429,6 +430,7 @@
 
             _load(url, h3d, ls) {
                 Char3D._cleanTex(url, (base) => {
+                    if (!base) return; // texture failed to load, skip
                     const asp = base.userData.aspect;
                     const w3d = h3d * asp;
 
@@ -437,15 +439,13 @@
                     const hipY = lH;                // world Y of hip pivot
 
                     // -- UPPER BODY (top ls fraction of image) --
-                    // THREE UV: y=0 is bottom of image quad, y=1 is top
-                    // Top ls of image → UVy from (1-ls) to 1 → offset.y=(1-ls), repeat.y=ls
                     const uTex = base.clone(); uTex.repeat.set(1, ls); uTex.offset.set(0, 1 - ls); uTex.needsUpdate = true;
                     this.upper = new THREE.Mesh(new THREE.PlaneGeometry(w3d, uH), this._mkMat(uTex));
                     this.upper.position.set(0, hipY + uH * 0.5, 0);
                     this.upper.renderOrder = 2;
                     this.group.add(this.upper);
 
-                    // -- BACK LEG (right half of image bottom ls, stays behind) --
+                    // -- BACK LEG (right half of image bottom, stays behind) --
                     const bTex = base.clone(); bTex.repeat.set(0.5, 1 - ls); bTex.offset.set(0.5, 0); bTex.needsUpdate = true;
                     const bMesh = new THREE.Mesh(new THREE.PlaneGeometry(w3d * 0.5, lH), this._mkMat(bTex));
                     bMesh.position.set(w3d * 0.25, -lH * 0.5, 0);
@@ -455,7 +455,7 @@
                     this.backPivot.add(bMesh);
                     this.group.add(this.backPivot);
 
-                    // -- FRONT LEG (left half of image bottom ls, in front) --
+                    // -- FRONT LEG (left half of image bottom, in front) --
                     const fTex = base.clone(); fTex.repeat.set(0.5, 1 - ls); fTex.offset.set(0, 0); fTex.needsUpdate = true;
                     const fMesh = new THREE.Mesh(new THREE.PlaneGeometry(w3d * 0.5, lH), this._mkMat(fTex));
                     fMesh.position.set(-w3d * 0.25, -lH * 0.5, 0);
