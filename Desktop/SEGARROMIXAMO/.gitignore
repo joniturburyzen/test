@@ -12,5 +12,8 @@ RECURSOS/cerdo corre/
 RECURSOS/cerdo estatico/
 RECURSOS/policia corre/
 RECURSOS/policia enfadado/
+# GLBs originales de Mixamo con texturas — demasiado grandes (58MB c/u)
 RECURSOS/Running*
+RECURSOS/Slow Run.glb
+RECURSOS/Running Right Turn/
 Untitled.glb
