@@ -790,47 +790,78 @@
       static _clips = { protRun: null, protJump: null, protChange: null,
                         poliRun: null, poliAngry: null, cerdoRun: null };
 
-      static async loadAll() {
+      // ── Carga con progreso real por bytes ────────────────────────────
+      static _loadFBX(url, onBytes) {
         const loader = new FBXLoader();
-        const total = 7;
-        let loaded = 0;
-        const tick = () => {
-          loaded++;
-          const b = document.getElementById('load-bar');
-          if (b) b.style.width = `${Math.round((loaded / total) * 100)}%`;
+        return new Promise((resolve, reject) =>
+          loader.load(url, resolve, onBytes, reject)
+        );
+      }
+
+      // ── FASE 1 (bloqueante): solo protagonista — 3 archivos en paralelo ──
+      // La barra va de 0→60%. El juego puede arrancar al terminar esta fase.
+      static async loadPhase1() {
+        const prog = [0, 0, 0], tot = [1, 1, 1];
+        const bar = document.getElementById('load-bar');
+        const refresh = () => {
+          if (!bar) return;
+          const bytes = prog.reduce((a, b) => a + b, 0);
+          const total = tot.reduce((a, b) => a + b, 0);
+          bar.style.width = `${Math.round((bytes / total) * 60)}%`;
         };
-        const load = url => loader.loadAsync(url).then(m => { tick(); return m; });
+        const mk = i => e => { if (e.total) tot[i] = e.total; prog[i] = e.loaded; refresh(); };
 
-        // ── Protagonista ─────────────────────────────────────────────────
-        const protRunFBX    = await load('./RECURSOS/CORRERPROTAGONISTA.fbx');
-        FBXCharFactory._base.prot         = protRunFBX;
-        FBXCharFactory._clips.protRun     = protRunFBX.animations[0];
+        const [protRunFBX, protJumpFBX, protChangeFBX] = await Promise.all([
+          FBXCharFactory._loadFBX('./RECURSOS/CORRERPROTAGONISTA.fbx', mk(0)),
+          FBXCharFactory._loadFBX('./RECURSOS/SALTOPROTAGONISTA.fbx',  mk(1)),
+          FBXCharFactory._loadFBX('./RECURSOS/CAMBIARRECTA.fbx',       mk(2)),
+        ]);
 
-        const protJumpFBX   = await load('./RECURSOS/SALTOPROTAGONISTA.fbx');
-        FBXCharFactory._clips.protJump    = protJumpFBX.animations[0];
+        FBXCharFactory._base.prot        = protRunFBX;
+        FBXCharFactory._clips.protRun    = protRunFBX.animations[0];
+        FBXCharFactory._clips.protJump   = protJumpFBX.animations[0];
+        FBXCharFactory._clips.protChange = protChangeFBX.animations[0];
+        protRunFBX.traverse(c => {
+          if (c.isMesh || c.isSkinnedMesh) { c.castShadow = true; c.receiveShadow = true; }
+        });
+        if (bar) bar.style.width = '60%';
+      }
 
-        const protChangeFBX = await load('./RECURSOS/CAMBIARRECTA.fbx');
-        FBXCharFactory._clips.protChange  = protChangeFBX.animations[0];
+      // ── FASE 2 (background): obstáculos — 3 archivos en paralelo ────────
+      // Arranca en segundo plano mientras el usuario está en el menú.
+      // La barra va de 60→100% (aunque ya no es visible, queda lista).
+      static async loadPhase2() {
+        const prog = [0, 0, 0], tot = [1, 1, 1];
+        const bar = document.getElementById('load-bar');
+        const refresh = () => {
+          if (!bar) return;
+          const bytes = prog.reduce((a, b) => a + b, 0);
+          const total = tot.reduce((a, b) => a + b, 0);
+          bar.style.width = `${60 + Math.round((bytes / total) * 40)}%`;
+        };
+        const mk = i => e => { if (e.total) tot[i] = e.total; prog[i] = e.loaded; refresh(); };
 
-        // ── Policía ──────────────────────────────────────────────────────
-        const poliRunFBX    = await load('./RECURSOS/POLICIACORRER.fbx');
-        FBXCharFactory._base.poli         = poliRunFBX;
-        FBXCharFactory._clips.poliRun     = poliRunFBX.animations[0];
+        const [poliRunFBX, poliAngryFBX, cerdoFBX] = await Promise.all([
+          FBXCharFactory._loadFBX('./RECURSOS/POLICIACORRER.fbx',  mk(0)),
+          FBXCharFactory._loadFBX('./RECURSOS/POLICIAENFADO.fbx',  mk(1)),
+          FBXCharFactory._loadFBX('./RECURSOS/CERDOCORRE.fbx',     mk(2)),
+        ]);
 
-        const poliAngryFBX  = await load('./RECURSOS/POLICIAENFADO.fbx');
-        FBXCharFactory._clips.poliAngry   = poliAngryFBX.animations[0];
-
-        // ── Cerdo ─────────────────────────────────────────────────────────
-        const cerdoFBX      = await load('./RECURSOS/CERDOCORRE.fbx');
-        FBXCharFactory._base.cerdo        = cerdoFBX;
-        FBXCharFactory._clips.cerdoRun    = cerdoFBX.animations[0];
-
-        // Sombras en todos los modelos base
-        [protRunFBX, poliRunFBX, cerdoFBX].forEach(fbx => {
+        FBXCharFactory._base.poli       = poliRunFBX;
+        FBXCharFactory._clips.poliRun   = poliRunFBX.animations[0];
+        FBXCharFactory._clips.poliAngry = poliAngryFBX.animations[0];
+        FBXCharFactory._base.cerdo      = cerdoFBX;
+        FBXCharFactory._clips.cerdoRun  = cerdoFBX.animations[0];
+        [poliRunFBX, cerdoFBX].forEach(fbx => {
           fbx.traverse(c => {
             if (c.isMesh || c.isSkinnedMesh) { c.castShadow = true; c.receiveShadow = true; }
           });
         });
+      }
+
+      // true cuando los obstáculos ya están disponibles para spawnear
+      static get obstaclesReady() {
+        return FBXCharFactory._base.poli !== null && FBXCharFactory._base.cerdo !== null;
       }
 
       // Clona el modelo base con esqueleto independiente y activa sombras
@@ -1392,6 +1423,8 @@
 
       _spawn() {
         if (this.contObs < this.freqObs) { this.contObs++; return; }
+        // Si los obstáculos aún no han cargado (fase 2 en background), esperar
+        if (!FBXCharFactory.obstaclesReady) { this.contObs = Math.floor(this.freqObs * 0.5); return; }
         this.contObs = 0;
         const lane = Math.floor(Math.random() * 3), r = Math.random();
         let type, mesh, rapido = false;
@@ -1730,15 +1763,23 @@
     }
 
     // ─────────────────────────────────────────────
-    // ARRANQUE ASÍNCRONO: carga FBX Mixamo, luego inicia
+    // ARRANQUE ASÍNCRONO — carga progresiva en 2 fases
+    //
+    //  Fase 1 (bloqueante): protagonista en paralelo → título visible
+    //  Fase 2 (background): obstáculos en paralelo   → listo antes del primer spawn
     // ─────────────────────────────────────────────
     async function main() {
-      await FBXCharFactory.loadAll();
-      // Pequeña pausa visual para que el usuario vea el 100%
-      await new Promise(r => setTimeout(r, 400));
+      // Fase 1: solo los 3 FBX del protagonista (en paralelo)
+      await FBXCharFactory.loadPhase1();
+
+      // Mostrar el menú sin esperar a los obstáculos
       document.getElementById('load-screen').style.display = 'none';
       document.getElementById('title-screen').style.display = 'flex';
       new SegarroDef();
+
+      // Fase 2: policía + cerdo en background mientras el usuario está en el menú
+      // _spawn() espera automáticamente a que obstaclesReady sea true
+      FBXCharFactory.loadPhase2();
     }
     main();
   </script>
