@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>EL SEGARRO 3D - DEFINITIVE EDITION</title>
   <!-- Precarga Three.js -->
-  <link rel="preload" href="./three.module.min.js" as="script" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js" crossorigin>
   <style>
     * {
       margin: 0;
@@ -628,7 +628,7 @@
     })();
   </script>
 
-  <!-- Importmap: Three.js r169 CDN para FBXLoader + SkeletonUtils -->
+  <!-- Importmap: Three.js r169 CDN para GLTFLoader + SkeletonUtils -->
   <script type="importmap">
   {
     "imports": {
@@ -640,8 +640,8 @@
 
   <script type="module">
     import * as THREE from 'three';
-    import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-    import { SkeletonUtils } from 'three/addons/utils/SkeletonUtils.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
     // ─────────────────────────────────────────────
     // [A] AUDIO CONTROLLER
@@ -715,33 +715,54 @@
 
       static createCigarro() {
         const g = new THREE.Group();
-        // Papel (más grande, más visible)
+        // Cuerpo principal — papel blanco-crema, sección circular
         const paper = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.14, 0.14, 1.1, 8),
-          new THREE.MeshPhongMaterial({ color: 0xf5f5dc, emissive: 0x222222 })
+          new THREE.CylinderGeometry(0.13, 0.13, 1.55, 10),
+          new THREE.MeshPhongMaterial({ color: 0xf0ead6, emissive: 0x0b0b08, shininess: 55 })
         );
         paper.rotation.x = Math.PI / 2;
-        // Filtro naranja
+        // Banda dorada decorativa (anillo de lujo)
+        const band = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.136, 0.136, 0.09, 10),
+          new THREE.MeshPhongMaterial({ color: 0xd4a017, emissive: 0x3d2500, shininess: 160 })
+        );
+        band.rotation.x = Math.PI / 2; band.position.z = 0.44;
+        // Filtro ámbar
         const filter = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.14, 0.14, 0.28, 8),
-          this.m(0xd2691e)
+          new THREE.CylinderGeometry(0.13, 0.13, 0.36, 10),
+          new THREE.MeshPhongMaterial({ color: 0xb05a20, emissive: 0x250c00, shininess: 40 })
         );
-        filter.rotation.x = Math.PI / 2; filter.position.z = 0.69;
-        // Brasa: esfera grande y brillante
-        const emberMat = new THREE.MeshBasicMaterial({ color: 0xff7700 });
-        const ember = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), emberMat);
-        ember.position.z = -0.65;
-        // Punto de calor interior (más pequeño, más blanco)
+        filter.rotation.x = Math.PI / 2; filter.position.z = 0.955;
+        // Ceniza gris en la punta quemada (cono)
+        const ash = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.0, 0.13, 0.22, 8),
+          new THREE.MeshPhongMaterial({ color: 0x484848, emissive: 0x111111, flatShading: true })
+        );
+        ash.rotation.x = Math.PI / 2; ash.position.z = -0.885;
+        // Brasa viva (naranja-rojo)
+        const emberMat = new THREE.MeshBasicMaterial({ color: 0xff4400 });
+        const ember = new THREE.Mesh(new THREE.SphereGeometry(0.145, 8, 8), emberMat);
+        ember.position.z = -0.82;
+        // Núcleo blanco-caliente
         const core = new THREE.Mesh(
-          new THREE.SphereGeometry(0.09, 6, 6),
-          new THREE.MeshBasicMaterial({ color: 0xffeeaa })
+          new THREE.SphereGeometry(0.068, 6, 6),
+          new THREE.MeshBasicMaterial({ color: 0xffe070 })
         );
-        core.position.z = -0.65;
-        // Luz intensa
-        const light = new THREE.PointLight(0xff6600, 2.5, 5.0);
-        light.position.z = -0.65;
-        g.add(paper, filter, ember, core, light);
-        g.userData = { ember, light };
+        core.position.z = -0.82;
+        // Halo de brasa (sprite aditivo, siempre mira a cámara)
+        const glowMat = new THREE.SpriteMaterial({
+          color: 0xff5500, transparent: true, opacity: 0.45,
+          blending: THREE.AdditiveBlending
+        });
+        const glow = new THREE.Sprite(glowMat);
+        glow.scale.set(1.0, 1.0, 1.0); glow.position.z = -0.82;
+        // Luz pulsante cálida
+        const light = new THREE.PointLight(0xff6600, 3.0, 7.0);
+        light.position.z = -0.82;
+        // Inclinación natural (cigarro no perfectamente horizontal)
+        g.rotation.z = 0.12;
+        g.add(paper, band, filter, ash, ember, core, glow, light);
+        g.userData = { ember, light, glow };
         return g;
       }
 
@@ -776,84 +797,85 @@
     }
 
     // ─────────────────────────────────────────────
-    // [B2] FBX CHARACTER FACTORY — personajes 3D Mixamo con animaciones reales
+    // [B2] GLB CHARACTER FACTORY — personajes 3D Mixamo (DAE → GLB vía Blender)
     //
-    //  Carga modelos FBX de la carpeta RECURSOS/ y los anima con AnimationMixer.
-    //  Cada personaje es un clon independiente con su propio mixer/esqueleto.
+    //  Carga 3 GLBs optimizados de RECURSOS/ y los anima con AnimationMixer.
+    //  Cada instancia es un clon independiente con su propio mixer/esqueleto.
     //
-    //  Protagonista : CORRERPROTAGONISTA + SALTOPROTAGONISTA + CAMBIARRECTA
-    //  Policía      : POLICIACORRER (normal) / POLICIAENFADO (rápido)
-    //  Cerdo        : CERDOCORRE
+    //  protagonista.glb : Correr + Saltar + Girar  (1 archivo, 3 animaciones)
+    //  policia.glb      : PoliCorrer + PoliEnfadado
+    //  cerdo.glb        : CerdoCorrer
+    //
+    //  ESCALA: 1.8  (Blender normaliza DAE cm → GLB metros; 160 cm → 1.6 m → ×1.8 = 2.88 u)
+    //
+    //  ROTACIÓN:
+    //   · Protagonista: rotation.y = 0    → espalda a cámara (corre hacia adelante ✓)
+    //   · Obstáculos:   rotation.y = Math.PI → cara al jugador (vienen contra ti ✓)
     // ─────────────────────────────────────────────
     class FBXCharFactory {
       static _base  = { prot: null, poli: null, cerdo: null };
       static _clips = { protRun: null, protJump: null, protChange: null,
                         poliRun: null, poliAngry: null, cerdoRun: null };
 
-      // ── Carga con progreso real por bytes ────────────────────────────
-      static _loadFBX(url, onBytes) {
-        const loader = new FBXLoader();
+      // ── Carga GLB con progreso real por bytes ────────────────────────
+      static _loadGLTF(url, onProgress) {
+        const loader = new GLTFLoader();
         return new Promise((resolve, reject) =>
-          loader.load(url, resolve, onBytes, reject)
+          loader.load(url, resolve, onProgress, reject)
         );
       }
 
-      // ── FASE 1 (bloqueante): solo protagonista — 3 archivos en paralelo ──
-      // La barra va de 0→60%. El juego puede arrancar al terminar esta fase.
+      // ── FASE 1 (bloqueante): protagonista — 1 GLB con 3 animaciones ──
+      // La barra va de 0→60%. El juego arranca al terminar esta fase.
       static async loadPhase1() {
-        const prog = [0, 0, 0], tot = [1, 1, 1];
         const bar = document.getElementById('load-bar');
-        const refresh = () => {
-          if (!bar) return;
-          const bytes = prog.reduce((a, b) => a + b, 0);
-          const total = tot.reduce((a, b) => a + b, 0);
-          bar.style.width = `${Math.round((bytes / total) * 60)}%`;
+        const onProg = e => {
+          if (!bar || !e.total) return;
+          bar.style.width = `${Math.round((e.loaded / e.total) * 60)}%`;
         };
-        const mk = i => e => { if (e.total) tot[i] = e.total; prog[i] = e.loaded; refresh(); };
 
-        const [protRunFBX, protJumpFBX, protChangeFBX] = await Promise.all([
-          FBXCharFactory._loadFBX('./RECURSOS/CORRERPROTAGONISTA.fbx', mk(0)),
-          FBXCharFactory._loadFBX('./RECURSOS/SALTOPROTAGONISTA.fbx',  mk(1)),
-          FBXCharFactory._loadFBX('./RECURSOS/CAMBIARRECTA.fbx',       mk(2)),
-        ]);
+        const gltf = await FBXCharFactory._loadGLTF('./RECURSOS/protagonista.glb', onProg);
 
-        FBXCharFactory._base.prot        = protRunFBX;
-        FBXCharFactory._clips.protRun    = protRunFBX.animations[0];
-        FBXCharFactory._clips.protJump   = protJumpFBX.animations[0];
-        FBXCharFactory._clips.protChange = protChangeFBX.animations[0];
-        protRunFBX.traverse(c => {
+        FBXCharFactory._base.prot        = gltf.scene;
+        const anims = gltf.animations;
+        FBXCharFactory._clips.protRun    = anims.find(a => a.name === 'Correr')  ?? anims[0];
+        FBXCharFactory._clips.protJump   = anims.find(a => a.name === 'Saltar')  ?? anims[1] ?? anims[0];
+        FBXCharFactory._clips.protChange = anims.find(a => a.name === 'Girar')   ?? anims[2] ?? anims[0];
+        gltf.scene.traverse(c => {
           if (c.isMesh || c.isSkinnedMesh) { c.castShadow = true; c.receiveShadow = true; }
         });
         if (bar) bar.style.width = '60%';
       }
 
-      // ── FASE 2 (background): obstáculos — 3 archivos en paralelo ────────
+      // ── FASE 2 (background): obstáculos — 3 GLBs en paralelo ────────
       // Arranca en segundo plano mientras el usuario está en el menú.
-      // La barra va de 60→100% (aunque ya no es visible, queda lista).
       static async loadPhase2() {
-        const prog = [0, 0, 0], tot = [1, 1, 1];
         const bar = document.getElementById('load-bar');
+        const prog = [0, 0, 0], tot = [1, 1, 1];
         const refresh = () => {
           if (!bar) return;
-          const bytes = prog.reduce((a, b) => a + b, 0);
-          const total = tot.reduce((a, b) => a + b, 0);
-          bar.style.width = `${60 + Math.round((bytes / total) * 40)}%`;
+          const b = prog.reduce((a, v) => a + v, 0);
+          const t = tot.reduce((a, v) => a + v, 0);
+          bar.style.width = `${60 + Math.round((b / t) * 40)}%`;
         };
         const mk = i => e => { if (e.total) tot[i] = e.total; prog[i] = e.loaded; refresh(); };
 
-        const [poliRunFBX, poliAngryFBX, cerdoFBX] = await Promise.all([
-          FBXCharFactory._loadFBX('./RECURSOS/POLICIACORRER.fbx',  mk(0)),
-          FBXCharFactory._loadFBX('./RECURSOS/POLICIAENFADO.fbx',  mk(1)),
-          FBXCharFactory._loadFBX('./RECURSOS/CERDOCORRE.fbx',     mk(2)),
+        const [poliRunGLTF, poliAngryGLTF, cerdoGLTF] = await Promise.all([
+          FBXCharFactory._loadGLTF('./RECURSOS/POLICIACORRER.glb', mk(0)),
+          FBXCharFactory._loadGLTF('./RECURSOS/POLICIAENFADO.glb', mk(1)),
+          FBXCharFactory._loadGLTF('./RECURSOS/CERDOCORRE.glb',    mk(2)),
         ]);
 
-        FBXCharFactory._base.poli       = poliRunFBX;
-        FBXCharFactory._clips.poliRun   = poliRunFBX.animations[0];
-        FBXCharFactory._clips.poliAngry = poliAngryFBX.animations[0];
-        FBXCharFactory._base.cerdo      = cerdoFBX;
-        FBXCharFactory._clips.cerdoRun  = cerdoFBX.animations[0];
-        [poliRunFBX, cerdoFBX].forEach(fbx => {
-          fbx.traverse(c => {
+        // Mesh base de policía = GLB corriendo; animación enfadado extraída del segundo GLB
+        FBXCharFactory._base.poli       = poliRunGLTF.scene;
+        FBXCharFactory._clips.poliRun   = poliRunGLTF.animations[0];
+        FBXCharFactory._clips.poliAngry = poliAngryGLTF.animations[0];
+
+        FBXCharFactory._base.cerdo      = cerdoGLTF.scene;
+        FBXCharFactory._clips.cerdoRun  = cerdoGLTF.animations[0];
+
+        [poliRunGLTF.scene, cerdoGLTF.scene].forEach(sc => {
+          sc.traverse(c => {
             if (c.isMesh || c.isSkinnedMesh) { c.castShadow = true; c.receiveShadow = true; }
           });
         });
@@ -864,26 +886,42 @@
         return FBXCharFactory._base.poli !== null && FBXCharFactory._base.cerdo !== null;
       }
 
-      // Clona el modelo base con esqueleto independiente y activa sombras
-      static _setup(baseFBX, scale) {
-        const model = SkeletonUtils.clone(baseFBX);
-        model.scale.setScalar(scale);
-        model.rotation.y = Math.PI; // mirar hacia la cámara
-        model.traverse(c => {
-          if (c.isMesh || c.isSkinnedMesh) { c.castShadow = true; c.receiveShadow = true; }
+      // Clona la escena GLB dentro de un Group wrapper limpio.
+      // El wrapper tiene la rotación deseada (sin interferencia de ejes de Blender).
+      // El inner model conserva las rotaciones internas del GLB intactas.
+      static _setup(baseScene, scale, rotY = 0) {
+        const inner = SkeletonUtils.clone(baseScene);
+        inner.traverse(c => {
+          if (c.isMesh || c.isSkinnedMesh) {
+            c.castShadow = true;
+            c.receiveShadow = true;
+            const mats = Array.isArray(c.material) ? c.material : [c.material];
+            mats.forEach(m => {
+              if (!m) return;
+              m.envMapIntensity = 0.6;
+              m.needsUpdate = true;
+            });
+          }
         });
-        return model;
+        const wrapper = new THREE.Group();
+        wrapper.add(inner);
+        wrapper.scale.setScalar(scale);
+        wrapper.rotation.y = rotY;
+        wrapper._inner = inner; // referencia para AnimationMixer
+        return wrapper;
       }
 
-      // ── PROTAGONISTA ─────────────────────────────────────────────────────
+      // ── PROTAGONISTA — espalda a cámara, corre hacia adelante ────────
       static createPlayer() {
-        const SCALE = 0.018; // Mixamo ~160 cm → ~2.9 unidades Three.js
-        const model = FBXCharFactory._setup(FBXCharFactory._base.prot, SCALE);
+        const SCALE = 1.8;
+        const wrapper = FBXCharFactory._setup(FBXCharFactory._base.prot, SCALE, Math.PI);
+        const inner   = wrapper._inner;
 
-        const mixer      = new THREE.AnimationMixer(model);
-        const runAction    = mixer.clipAction(FBXCharFactory._clips.protRun);
-        const jumpAction   = mixer.clipAction(FBXCharFactory._clips.protJump);
-        const changeAction = mixer.clipAction(FBXCharFactory._clips.protChange);
+        const mixer      = new THREE.AnimationMixer(inner);
+        const anims      = FBXCharFactory._clips;
+        const runAction    = mixer.clipAction(anims.protRun);
+        const jumpAction   = mixer.clipAction(anims.protJump);
+        const changeAction = mixer.clipAction(anims.protChange);
 
         jumpAction.setLoop(THREE.LoopOnce, 1);
         jumpAction.clampWhenFinished = true;
@@ -891,33 +929,33 @@
         changeAction.clampWhenFinished = true;
         runAction.play();
 
-        // Luz áurea (posición en espacio local del modelo escalado)
         const aura = new THREE.PointLight(0xffd700, 0, 8);
         aura.position.set(0, 2.9 / SCALE * 0.5, 0);
-        model.add(aura);
+        wrapper.add(aura);
 
-        model.userData = {
+        wrapper.userData = {
           mixer, runAction, jumpAction, changeAction, auraLight: aura,
           totalH: 2.9, w: 0.8,
           prevSaltando: false, prevCarril: 1,
+          baseScale: SCALE,
           isFBX: true
         };
-        return model;
+        return wrapper;
       }
 
-      // ── POLICÍA ───────────────────────────────────────────────────────
+      // ── POLICÍA — cara al jugador, viene contra ti ───────────────────
       static createPolicia(rapido = false) {
-        const SCALE = 0.018;
-        const model = FBXCharFactory._setup(FBXCharFactory._base.poli, SCALE);
+        const SCALE = 1.8;
+        const wrapper = FBXCharFactory._setup(FBXCharFactory._base.poli, SCALE, 0);
+        const inner   = wrapper._inner;
 
-        const mixer      = new THREE.AnimationMixer(model);
-        const runAction    = mixer.clipAction(FBXCharFactory._clips.poliRun);
-        const angryAction  = mixer.clipAction(FBXCharFactory._clips.poliAngry);
+        const mixer     = new THREE.AnimationMixer(inner);
+        const runAction   = mixer.clipAction(FBXCharFactory._clips.poliRun);
+        const angryAction = mixer.clipAction(FBXCharFactory._clips.poliAngry);
 
         if (rapido) {
           angryAction.play();
-          // Tinte azulado para policía rápido
-          model.traverse(c => {
+          wrapper.traverse(c => {
             if ((c.isMesh || c.isSkinnedMesh) && c.material) {
               const mats = Array.isArray(c.material) ? c.material : [c.material];
               mats.forEach(m => { m.emissive = new THREE.Color(0x002244); });
@@ -925,37 +963,38 @@
           });
           const rl = new THREE.PointLight(0xff1111, 2.0, 5.5);
           rl.position.set(0, 2.5 / SCALE, 0);
-          model.add(rl);
-          model.userData.rLight = rl;
+          wrapper.add(rl);
+          wrapper.userData.rLight = rl;
         } else {
           runAction.play();
         }
 
-        model.userData = {
-          ...model.userData,
+        wrapper.userData = {
+          ...wrapper.userData,
           mixer, runAction, angryAction,
           totalH: 2.9, w: 0.8,
           isFBX: true
         };
-        return model;
+        return wrapper;
       }
 
-      // ── CERDO ────────────────────────────────────────────────────────
+      // ── CERDO — cara al jugador, viene más lento que la policía ─────
       static createCerdo() {
-        const SCALE = 0.020;
-        const model = FBXCharFactory._setup(FBXCharFactory._base.cerdo, SCALE);
+        const SCALE = 2.0;
+        const wrapper = FBXCharFactory._setup(FBXCharFactory._base.cerdo, SCALE, 0);
+        const inner   = wrapper._inner;
 
-        const mixer   = new THREE.AnimationMixer(model);
+        const mixer   = new THREE.AnimationMixer(inner);
         const runAction = mixer.clipAction(FBXCharFactory._clips.cerdoRun);
         runAction.play();
 
-        model.userData = {
-          ...model.userData,
+        wrapper.userData = {
+          ...wrapper.userData,
           mixer, runAction,
           totalH: 2.4, w: 1.0,
           isFBX: true
         };
-        return model;
+        return wrapper;
       }
     }
 
@@ -1204,20 +1243,37 @@
         this.camera.position.set(0, 8, 14);
         this.camera.lookAt(0, 1.5, -4);
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, precision: 'highp' });
         this.renderer.setSize(innerWidth, innerHeight);
         this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.1;
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         document.getElementById('game-container').appendChild(this.renderer.domElement);
 
-        this.scene.add(new THREE.AmbientLight(0x445566, 0.9));
-        const sun = new THREE.DirectionalLight(0xffeedd, 1.5);
-        sun.position.set(5, 20, 10); sun.castShadow = true;
-        sun.shadow.mapSize.width = 1024; sun.shadow.mapSize.height = 1024;
+        // Luz hemisférica: cielo cálido + suelo frío, imita luz ambiente natural
+        const hemi = new THREE.HemisphereLight(0xffeedd, 0x223366, 0.8);
+        this.scene.add(hemi);
+
+        // Sol principal — sombras suaves de alta resolución
+        const sun = new THREE.DirectionalLight(0xfff5e0, 2.2);
+        sun.position.set(6, 22, 12); sun.castShadow = true;
+        sun.shadow.mapSize.width = 2048; sun.shadow.mapSize.height = 2048;
+        sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 80;
+        sun.shadow.camera.left = -12; sun.shadow.camera.right = 12;
+        sun.shadow.camera.top = 12; sun.shadow.camera.bottom = -12;
+        sun.shadow.bias = -0.0003;
         this.scene.add(sun);
-        const rimL = new THREE.DirectionalLight(0x4cc9f0, 0.6);
-        rimL.position.set(0, -5, -10); this.scene.add(rimL);
+
+        // Luz de relleno frontal (ilumina caras de los personajes)
+        const fill = new THREE.DirectionalLight(0x88aaff, 0.5);
+        fill.position.set(0, 5, 20); this.scene.add(fill);
+
+        // Rim light lateral para definir siluetas
+        const rimL = new THREE.DirectionalLight(0x4cc9f0, 0.7);
+        rimL.position.set(-8, 3, -10); this.scene.add(rimL);
 
         this.camRig = new CameraRig(this.camera);
         this.clock = new THREE.Clock();
@@ -1334,7 +1390,8 @@
         window.addEventListener('keyup', e => {
           if (e.code === 'ArrowDown' || e.code === 'KeyS') {
             this.j.agachado = false;
-            this.playerMesh.scale.set(1, 1, 1);
+            const S = this.playerMesh.userData.baseScale || 1;
+            this.playerMesh.scale.setScalar(S);
             this.playerMesh.position.y = this.j.y;
           }
         });
@@ -1369,8 +1426,8 @@
       _agachar() {
         if (this.j.agachado || !this.j.enSuelo) return;
         this.j.agachado = true;
-        // Squash del group (sprite se aplana desde los pies hacia arriba)
-        this.playerMesh.scale.set(1.35, 0.52, 1);
+        const S = this.playerMesh.userData.baseScale || 1;
+        this.playerMesh.scale.set(S * 0.75, S * 0.29, S);
       }
 
       _activarEuro() {
@@ -1431,7 +1488,7 @@
         if (r < 0.45) { type = 'poli'; rapido = false; mesh = FBXCharFactory.createPolicia(false); }
         else if (r < 0.67) { type = 'poli'; rapido = true; mesh = FBXCharFactory.createPolicia(true); }
         else if (r < 0.75) { type = 'cerdo'; mesh = FBXCharFactory.createCerdo(); }
-        else { type = 'cig'; mesh = VF.createCigarro(); mesh.scale.setScalar(1.3); }
+        else { type = 'cig'; mesh = VF.createCigarro(); mesh.scale.setScalar(1.1); }
 
         mesh.position.set(this.lanesX[lane], 0, -90);
         this.scene.add(mesh);
@@ -1470,7 +1527,8 @@
         // Si se suelta agachar mientras salta en el aire, restaurar
         if (this.j.agachado && !this.j.enSuelo) {
           this.j.agachado = false;
-          this.playerMesh.scale.set(1, 1, 1);
+          const S = this.playerMesh.userData.baseScale || 1;
+          this.playerMesh.scale.setScalar(S);
         }
 
         // Posición del personaje
@@ -1535,11 +1593,17 @@
           if (this.j.pakiRicoh.contador >= this.j.pakiRicoh.duracion) this._terminarPaki();
         }
 
-        // Animación brillo cigarro + flotación
+        // Animación cigarro: brillo pulsante + giro suave + flotación
         for (const obs of this.obstacles) {
           if (obs.type === 'cig' && obs.mesh.userData.light) {
-            obs.mesh.userData.light.intensity = 1.5 + Math.sin(this.tiempo * 0.12) * 1.0;
-            obs.mesh.position.y = 0.9 + Math.sin(this.tiempo * 0.09 + (obs.flotOffset || 0)) * 0.35;
+            const pulse = 2.0 + Math.sin(this.tiempo * 0.15) * 1.2;
+            obs.mesh.userData.light.intensity = pulse;
+            if (obs.mesh.userData.glow) {
+              obs.mesh.userData.glow.material.opacity = 0.28 + Math.sin(this.tiempo * 0.15) * 0.14;
+              obs.mesh.userData.glow.scale.setScalar(0.8 + Math.sin(this.tiempo * 0.10) * 0.28);
+            }
+            obs.mesh.position.y = 1.1 + Math.sin(this.tiempo * 0.09 + (obs.flotOffset || 0)) * 0.3;
+            obs.mesh.rotation.y += 0.013; // giro lento y seductor
           }
         }
 
@@ -1630,8 +1694,9 @@
           this.ultimoBump = this.score;
         }
         document.getElementById('score-display').textContent = `SCORE: ${this.score}`;
-        // 7 niveles de velocidad (idénticos al original)
-        this.vel = 4.8;
+        // Rampa gradual: sube de 2.8 a 4.8 en los primeros 30 segundos (~1800 frames)
+        const BASE_VEL = Math.min(4.8, 2.8 + (this.tiempo / 1800) * 2.0);
+        this.vel = BASE_VEL;
         if (this.score >= 1000) this.vel += 0.6;
         if (this.score >= 2000) this.vel += 0.6;
         if (this.score >= 3500) this.vel += 0.6;
@@ -1765,11 +1830,11 @@
     // ─────────────────────────────────────────────
     // ARRANQUE ASÍNCRONO — carga progresiva en 2 fases
     //
-    //  Fase 1 (bloqueante): protagonista en paralelo → título visible
-    //  Fase 2 (background): obstáculos en paralelo   → listo antes del primer spawn
+    //  Fase 1 (bloqueante): protagonista.glb con 3 animaciones → título visible
+    //  Fase 2 (background): policia.glb + cerdo.glb            → listo antes del primer spawn
     // ─────────────────────────────────────────────
     async function main() {
-      // Fase 1: solo los 3 FBX del protagonista (en paralelo)
+      // Fase 1: protagonista.glb (Correr + Saltar + Girar)
       await FBXCharFactory.loadPhase1();
 
       // Mostrar el menú sin esperar a los obstáculos

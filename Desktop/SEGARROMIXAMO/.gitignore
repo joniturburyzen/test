@@ -1,2 +1,16 @@
 # PROTAGONISTA.fbx supera el límite de 100MB de GitHub (es el T-pose base, no se usa en el juego)
 RECURSOS/PROTAGONISTA.fbx
+
+# GLBs individuales sin combinar — no se usan en el juego (demasiado grandes)
+RECURSOS/cambiarrecta.glb
+RECURSOS/correrprotagonista.glb
+RECURSOS/saltoprotagonista.glb
+RECURSOS/CERDO.glb
+
+# Archivos temporales de Blender y fuentes DAE
+RECURSOS/cerdo corre/
+RECURSOS/cerdo estatico/
+RECURSOS/policia corre/
+RECURSOS/policia enfadado/
+RECURSOS/Running*
+Untitled.glb
