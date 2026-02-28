@@ -835,6 +835,7 @@
         };
 
         const gltf = await FBXCharFactory._loadGLTF('./RECURSOS/protagonista.glb', onProg);
+        console.log('🎭 protagonista.glb animaciones:', gltf.animations.map(a => `"${a.name}" (${a.duration.toFixed(2)}s)`));
 
         FBXCharFactory._base.prot        = gltf.scene;
         const anims = gltf.animations;
