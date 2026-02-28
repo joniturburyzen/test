@@ -814,9 +814,20 @@
     // ─────────────────────────────────────────────
     class FBXCharFactory {
       static _base  = { prot: null, poli: null, cerdo: null };
-      static _clips = { protRun: null, protRunSlow: null, protRunFast: null,
-                        protJump: null, protChange: null,
+      static _clips = { protRun: null, protJump: null, protChange: null,
                         poliRun: null, poliAngry: null, cerdoRun: null };
+
+      // Elimina el root motion vertical (Hips Y) de un AnimationClip.
+      // Evita que el personaje se hunda bajo el suelo durante la animación.
+      static _fixHipsY(clip) {
+        for (const track of clip.tracks) {
+          if (/hips/i.test(track.name) && track.name.endsWith('.position')) {
+            const restY = track.values[1]; // altura en la primera clave
+            for (let i = 1; i < track.values.length; i += 3) track.values[i] = restY;
+          }
+        }
+        return clip;
+      }
 
       // ── Carga GLB con progreso real por bytes ────────────────────────
       static _loadGLTF(url, onProgress) {
@@ -826,42 +837,33 @@
         );
       }
 
-      // ── FASE 1 (bloqueante): protagonista + correr_lento ────────────
+      // ── FASE 1 (bloqueante): protagonista — 1 GLB con 3 animaciones ──
       // La barra va de 0→60%. El juego arranca al terminar esta fase.
       static async loadPhase1() {
         const bar = document.getElementById('load-bar');
-        const prog = [0, 0], tot = [1, 1];
-        const refresh = () => {
-          if (!bar) return;
-          const b = prog.reduce((a, v) => a + v, 0);
-          const t = tot.reduce((a, v) => a + v, 0);
-          bar.style.width = `${Math.round((b / t) * 60)}%`;
+        const onProg = e => {
+          if (!bar || !e.total) return;
+          bar.style.width = `${Math.round((e.loaded / e.total) * 60)}%`;
         };
-        const mk = i => e => { if (e.total) tot[i] = e.total; prog[i] = e.loaded; refresh(); };
 
-        const [gltf, slowGLTF] = await Promise.all([
-          FBXCharFactory._loadGLTF('./RECURSOS/protagonista.glb', mk(0)),
-          FBXCharFactory._loadGLTF('./RECURSOS/correr_lento.glb', mk(1)),
-        ]);
+        const gltf = await FBXCharFactory._loadGLTF('./RECURSOS/protagonista.glb', onProg);
 
         FBXCharFactory._base.prot        = gltf.scene;
         const anims = gltf.animations;
-        FBXCharFactory._clips.protRun    = anims.find(a => a.name === 'Correr')  ?? anims[0];
-        FBXCharFactory._clips.protJump   = anims.find(a => a.name === 'Saltar')  ?? anims[1] ?? anims[0];
-        FBXCharFactory._clips.protChange = anims.find(a => a.name === 'Girar')   ?? anims[2] ?? anims[0];
-        FBXCharFactory._clips.protRunSlow = slowGLTF.animations[0] ?? FBXCharFactory._clips.protRun;
-
+        FBXCharFactory._clips.protJump   = FBXCharFactory._fixHipsY(anims.find(a => a.name === 'Saltar')  ?? anims[1] ?? anims[0]);
+        FBXCharFactory._clips.protChange = FBXCharFactory._fixHipsY(anims.find(a => a.name === 'Girar')   ?? anims[2] ?? anims[0]);
+        FBXCharFactory._clips.protRun    = FBXCharFactory._fixHipsY(anims.find(a => a.name === 'Correr')  ?? anims[0]);
         gltf.scene.traverse(c => {
           if (c.isMesh || c.isSkinnedMesh) { c.castShadow = true; c.receiveShadow = true; }
         });
         if (bar) bar.style.width = '60%';
       }
 
-      // ── FASE 2 (background): obstáculos + correr rápido ─────────────
+      // ── FASE 2 (background): obstáculos — 3 GLBs en paralelo ────────
       // Arranca en segundo plano mientras el usuario está en el menú.
       static async loadPhase2() {
         const bar = document.getElementById('load-bar');
-        const prog = [0, 0, 0, 0], tot = [1, 1, 1, 1];
+        const prog = [0, 0, 0], tot = [1, 1, 1];
         const refresh = () => {
           if (!bar) return;
           const b = prog.reduce((a, v) => a + v, 0);
@@ -870,28 +872,28 @@
         };
         const mk = i => e => { if (e.total) tot[i] = e.total; prog[i] = e.loaded; refresh(); };
 
-        const [poliRunGLTF, poliAngryGLTF, cerdoGLTF, fastGLTF] = await Promise.all([
-          FBXCharFactory._loadGLTF('./RECURSOS/POLICIACORRER.glb', mk(0)),
-          FBXCharFactory._loadGLTF('./RECURSOS/POLICIAENFADO.glb', mk(1)),
-          FBXCharFactory._loadGLTF('./RECURSOS/CERDOCORRE.glb',    mk(2)),
-          FBXCharFactory._loadGLTF('./RECURSOS/correr.glb',        mk(3)),
-        ]);
+        try {
+          const [poliRunGLTF, poliAngryGLTF, cerdoGLTF] = await Promise.all([
+            FBXCharFactory._loadGLTF('./RECURSOS/POLICIACORRER.glb', mk(0)),
+            FBXCharFactory._loadGLTF('./RECURSOS/POLICIAENFADO.glb', mk(1)),
+            FBXCharFactory._loadGLTF('./RECURSOS/CERDOCORRE.glb',    mk(2)),
+          ]);
 
-        // Mesh base de policía = GLB corriendo; animación enfadado extraída del segundo GLB
-        FBXCharFactory._base.poli       = poliRunGLTF.scene;
-        FBXCharFactory._clips.poliRun   = poliRunGLTF.animations[0];
-        FBXCharFactory._clips.poliAngry = poliAngryGLTF.animations[0];
+          FBXCharFactory._base.poli       = poliRunGLTF.scene;
+          FBXCharFactory._clips.poliRun   = poliRunGLTF.animations[0];
+          FBXCharFactory._clips.poliAngry = poliAngryGLTF.animations[0];
 
-        FBXCharFactory._base.cerdo      = cerdoGLTF.scene;
-        FBXCharFactory._clips.cerdoRun  = cerdoGLTF.animations[0];
+          FBXCharFactory._base.cerdo      = cerdoGLTF.scene;
+          FBXCharFactory._clips.cerdoRun  = FBXCharFactory._fixHipsY(cerdoGLTF.animations[0]);
 
-        FBXCharFactory._clips.protRunFast = fastGLTF.animations[0] ?? FBXCharFactory._clips.protRun;
-
-        [poliRunGLTF.scene, cerdoGLTF.scene].forEach(sc => {
-          sc.traverse(c => {
-            if (c.isMesh || c.isSkinnedMesh) { c.castShadow = true; c.receiveShadow = true; }
+          [poliRunGLTF.scene, cerdoGLTF.scene].forEach(sc => {
+            sc.traverse(c => {
+              if (c.isMesh || c.isSkinnedMesh) { c.castShadow = true; c.receiveShadow = true; }
+            });
           });
-        });
+        } catch(e) {
+          console.error('loadPhase2 error:', e);
+        }
       }
 
       // true cuando los obstáculos ya están disponibles para spawnear
@@ -933,23 +935,24 @@
         const mixer      = new THREE.AnimationMixer(inner);
         const anims      = FBXCharFactory._clips;
         const runAction    = mixer.clipAction(anims.protRun);
-        const slowRunAction = anims.protRunSlow ? mixer.clipAction(anims.protRunSlow) : runAction;
-        const fastRunAction = anims.protRunFast ? mixer.clipAction(anims.protRunFast) : runAction;
         const jumpAction   = mixer.clipAction(anims.protJump);
         const changeAction = mixer.clipAction(anims.protChange);
+
+        // Loop suave: interpola el inicio y fin del ciclo para eliminar el salto visual
+        runAction.zeroSlopeAtStart = true;
+        runAction.zeroSlopeAtEnd   = true;
 
         jumpAction.setLoop(THREE.LoopOnce, 1);
         jumpAction.clampWhenFinished = true;
         changeAction.setLoop(THREE.LoopOnce, 1);
-        changeAction.clampWhenFinished = false; // no congelar en último fotograma
-        slowRunAction.play();
+        changeAction.clampWhenFinished = false;
+        runAction.play();
 
-        // Al terminar el giro, volver suavemente al run activo
+        // Al terminar el giro, volver suavemente al run
         mixer.addEventListener('finished', e => {
           if (e.action === changeAction) {
-            const activeRun = wrapper.userData._activeRun || slowRunAction;
             changeAction.fadeOut(0.25);
-            activeRun.reset().fadeIn(0.25).play();
+            runAction.reset().fadeIn(0.25).play();
           }
         });
 
@@ -958,9 +961,7 @@
         wrapper.add(aura);
 
         wrapper.userData = {
-          mixer, runAction, slowRunAction, fastRunAction, jumpAction, changeAction, auraLight: aura,
-          _activeRun: slowRunAction,
-          _isFast: false,
+          mixer, runAction, jumpAction, changeAction, auraLight: aura,
           totalH: 2.9, w: 0.8,
           prevSaltando: false, prevCarril: 1,
           baseScale: SCALE,
@@ -1568,37 +1569,22 @@
         // ── Máquina de estados de animación FBX ──────────────────────────
         const ud = this.playerMesh.userData;
         if (ud.isFBX) {
-          // Cambio slow ↔ fast según velocidad (umbral 3.5)
-          const wantFast = ud.fastRunAction !== ud.slowRunAction && this.vel >= 3.5;
-          if (wantFast && !ud._isFast && !this.j.saltando) {
-            ud._isFast = true;
-            ud._activeRun = ud.fastRunAction;
-            ud.slowRunAction.fadeOut(0.5);
-            ud.fastRunAction.reset().fadeIn(0.5).play();
-          } else if (!wantFast && ud._isFast && !this.j.saltando) {
-            ud._isFast = false;
-            ud._activeRun = ud.slowRunAction;
-            ud.fastRunAction.fadeOut(0.5);
-            ud.slowRunAction.reset().fadeIn(0.5).play();
-          }
-
           // Transición Run → Jump al despegar
           if (this.j.saltando && !ud.prevSaltando) {
-            (ud._activeRun || ud.runAction).fadeOut(0.1);
+            ud.runAction.fadeOut(0.1);
             ud.jumpAction.reset().fadeIn(0.1).play();
           }
           // Transición Jump → Run al aterrizar
           if (!this.j.saltando && ud.prevSaltando) {
             ud.jumpAction.fadeOut(0.15);
-            (ud._activeRun || ud.runAction).reset().fadeIn(0.15).play();
+            ud.runAction.reset().fadeIn(0.15).play();
           }
           // Animación de cambio de carril (se reproduce una vez)
           if (this.j.carril !== ud.prevCarril && ud.changeAction) {
             ud.changeAction.reset().setEffectiveWeight(0.8).play();
           }
-          // Velocidad de animación proporcional a la velocidad del juego
-          const activeRun = ud._activeRun || ud.runAction;
-          if (activeRun) activeRun.timeScale = 0.8 + (this.vel - 1.8) * 0.08;
+          // timeScale: la animación de correr se acelera con la velocidad del juego
+          ud.runAction.timeScale = 0.6 + (this.vel - 1.8) * 0.1;
           ud.prevSaltando = this.j.saltando;
           ud.prevCarril   = this.j.carril;
         }

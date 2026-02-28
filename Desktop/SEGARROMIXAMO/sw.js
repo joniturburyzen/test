@@ -2,7 +2,7 @@
 // Primera visita: descarga todo y lo guarda en caché.
 // Visitas siguientes: FBX (52MB c/u) salen del disco → carga instantánea.
 
-const CACHE = 'segarro-v5';
+const CACHE = 'segarro-v6';
 
 // Solo pre-cacheamos el HTML en la instalación.
 // Los FBX se cachean automáticamente la primera vez que se descargan (fetch handler).
