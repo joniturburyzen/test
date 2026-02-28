@@ -927,8 +927,16 @@
         jumpAction.setLoop(THREE.LoopOnce, 1);
         jumpAction.clampWhenFinished = true;
         changeAction.setLoop(THREE.LoopOnce, 1);
-        changeAction.clampWhenFinished = true;
+        changeAction.clampWhenFinished = false; // no congelar en último fotograma
         runAction.play();
+
+        // Al terminar el giro, volver suavemente al run
+        mixer.addEventListener('finished', e => {
+          if (e.action === changeAction) {
+            changeAction.fadeOut(0.25);
+            runAction.reset().fadeIn(0.25).play();
+          }
+        });
 
         const aura = new THREE.PointLight(0xffd700, 0, 8);
         aura.position.set(0, 2.9 / SCALE * 0.5, 0);
@@ -1250,16 +1258,16 @@
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.1;
+        this.renderer.toneMappingExposure = 1.6;
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         document.getElementById('game-container').appendChild(this.renderer.domElement);
 
-        // Luz hemisférica: cielo cálido + suelo frío, imita luz ambiente natural
-        const hemi = new THREE.HemisphereLight(0xffeedd, 0x223366, 0.8);
+        // Luz hemisférica intensa: cielo cálido + suelo azulado
+        const hemi = new THREE.HemisphereLight(0xfff0cc, 0x334466, 1.8);
         this.scene.add(hemi);
 
-        // Sol principal — sombras suaves de alta resolución
-        const sun = new THREE.DirectionalLight(0xfff5e0, 2.2);
+        // Sol principal — sombras nítidas
+        const sun = new THREE.DirectionalLight(0xfff5e0, 3.5);
         sun.position.set(6, 22, 12); sun.castShadow = true;
         sun.shadow.mapSize.width = 2048; sun.shadow.mapSize.height = 2048;
         sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 80;
@@ -1268,12 +1276,12 @@
         sun.shadow.bias = -0.0003;
         this.scene.add(sun);
 
-        // Luz de relleno frontal (ilumina caras de los personajes)
-        const fill = new THREE.DirectionalLight(0x88aaff, 0.5);
-        fill.position.set(0, 5, 20); this.scene.add(fill);
+        // Luz de relleno frontal fuerte (ilumina personajes que vienen de frente)
+        const fill = new THREE.DirectionalLight(0xaabbff, 2.0);
+        fill.position.set(0, 6, 20); this.scene.add(fill);
 
         // Rim light lateral para definir siluetas
-        const rimL = new THREE.DirectionalLight(0x4cc9f0, 0.7);
+        const rimL = new THREE.DirectionalLight(0x4cc9f0, 1.2);
         rimL.position.set(-8, 3, -10); this.scene.add(rimL);
 
         this.camRig = new CameraRig(this.camera);
@@ -1695,8 +1703,8 @@
           this.ultimoBump = this.score;
         }
         document.getElementById('score-display').textContent = `SCORE: ${this.score}`;
-        // Rampa gradual: sube de 2.8 a 4.8 en los primeros 30 segundos (~1800 frames)
-        const BASE_VEL = Math.min(4.8, 2.8 + (this.tiempo / 1800) * 2.0);
+        // Rampa gradual: sube de 1.8 a 4.8 en los primeros 90 segundos (~5400 frames)
+        const BASE_VEL = Math.min(4.8, 1.8 + (this.tiempo / 5400) * 3.0);
         this.vel = BASE_VEL;
         if (this.score >= 1000) this.vel += 0.6;
         if (this.score >= 2000) this.vel += 0.6;
